@@ -25,7 +25,12 @@ runs:
         echo "Given prefix was: ${{ inputs.prefix }}"
         echo "Given suffix was: ${{ inputs.suffix }}"
     - id: tag-generator
-      run: echo "::set-output name=tags::'$(bash ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }} -prefix ${{ inputs.prefix }} -suffix ${{ inputs.suffix }})'"
+      run: |
+        echo "::set-output name=tags::$(\
+          ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }} \
+          -prefix ${{ inputs.prefix }} \
+          -suffix ${{ inputs.suffix }} \
+        )"
       shell: bash
     - id: outputs
       shell: bash

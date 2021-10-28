@@ -1,4 +1,4 @@
-name: 'Genertae tags'
+name: 'Generate tags'
 description: 'Genertaes semver compatible tags for docker images based on a slug reference (i.e, / converted to _)'
 inputs:
   slug:  # id of input

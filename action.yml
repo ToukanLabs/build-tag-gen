@@ -27,11 +27,17 @@ runs:
     - id: tag-generator
       run: |
         chmod 777 ${{ github.action_path }}/tag-gen.sh
-        echo "::set-output name=tags::\"$(\
+        tags="$(\
           ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }} \
           -prefix ${{ inputs.prefix }} \
           -suffix ${{ inputs.suffix }} \
-        )\""
+        )"
+        # cleanup to allow GHA to process multi-line string as an output
+        tags="${tags//'%'/'%25'}"
+        tags="${tags//$'\n'/'%0A'}"
+        tags="${tags//$'\r'/'%0D'}"
+        
+        echo "::set-output name=tags::$tags"
       shell: bash
     - id: outputs
       shell: bash

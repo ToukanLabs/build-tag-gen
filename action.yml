@@ -26,11 +26,12 @@ runs:
         echo "Given suffix was: ${{ inputs.suffix }}"
     - id: tag-generator
       run: |
-        echo "::set-output name=tags::$(\
+        chmod 777 ${{ github.action_path }}/tag-gen.sh
+        echo "::set-output name=tags::\"$(\
           ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }} \
           -prefix ${{ inputs.prefix }} \
           -suffix ${{ inputs.suffix }} \
-        )"
+        )\""
       shell: bash
     - id: outputs
       shell: bash

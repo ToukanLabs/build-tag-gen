@@ -1,0 +1,29 @@
+name: 'Genertae tags'
+description: 'Genertaes semver compatible tags for docker images based on a slug reference (i.e, / converted to _)'
+inputs:
+  slug:  # id of input
+    description: 'the branch/tag reference in slug format (/ converted to _)'
+    required: true
+  prefix:
+    description: "A prefix to append before all tag names (e.g, debug)"
+    required: false
+    default: '.'
+  suffix:
+    description: "A suffix to append after all tag names (e.g, a client-specific suffix)"
+    required: false
+    default: '.'
+outputs:
+  tags:
+    description: "A newline separated list of tags"
+    value: ${{ steps.tag-generator.outputs.tags }}
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        echo "Given slug was: ${{ inputs.slug }}"
+        echo "Given prefix was: ${{ inputs.prefix }}"
+        echo "Given suffix was: ${{ inputs.suffix }}"
+    - id: tag-generator
+      run: echo "::set-output name=tags::$(bash ${{ github.action_path }}/tag-gen.sh)"
+      shell: bash

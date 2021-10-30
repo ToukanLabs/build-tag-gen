@@ -1,9 +1,12 @@
 name: 'Generate tags'
 description: 'Genertaes semver compatible tags for docker images based on a slug reference (i.e, / converted to _)'
 inputs:
-  slug:  # id of input
+  slug:  
     description: 'the branch/tag reference in slug format (/ converted to _)'
     required: true
+  image-name:
+    description: A docker image name. e.g, myrepo/myimage
+    required: false
   prefix:
     description: "A prefix to append before all tag names (e.g, debug)"
     required: false
@@ -12,6 +15,12 @@ inputs:
     description: "A suffix to append after all tag names (e.g, a client-specific suffix)"
     required: false
     default: '.'
+  docker-user:
+    description: The docker hub user account (needed if image is private)
+    required: false
+  docker-pass:
+    description: The docker hub account password (needed if image is private)
+    required: false
 outputs:
   tags:
     description: "A newline separated list of tags"
@@ -24,11 +33,18 @@ runs:
         echo "Given slug was: ${{ inputs.slug }}"
         echo "Given prefix was: ${{ inputs.prefix }}"
         echo "Given suffix was: ${{ inputs.suffix }}"
+        echo "Given image was: ${{ inputs.image-name }}"
     - id: tag-generator
+      env:
+        ACTION_PATH: "${{ github.action_path }}"
+        DOCKER_USER: "${{ inputs.docker-user }}"
+        DOCKER_PASS: "${{ inputs.docker-pass }}"
+        DOCKER_IMAGE: "${{ inputs.image-name }}"
       run: |
-        chmod 777 ${{ github.action_path }}/tag-gen.sh
+        chmod 777 "$ACTION_PATH"/tag-gen.sh "$ACTION_PATH"/dockertags.sh
+        cd "$ACTION_PATH"
         tags="$(\
-          ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }} \
+          ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }}${DOCKER_USER:+ -u=$DOCKER_USER}${DOCKER_PASS:+ -p=$DOCKER_PASS}${DOCKER_IMAGE:+ -i=$DOCKER_IMAGE}\
           -prefix ${{ inputs.prefix }} \
           -suffix ${{ inputs.suffix }} \
         )"

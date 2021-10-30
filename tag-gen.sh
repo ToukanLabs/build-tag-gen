@@ -1,6 +1,6 @@
 #!/bin/bash
 slug=""
-prefix=""
+prefix=''
 suffix=""
 user=''
 pass=''

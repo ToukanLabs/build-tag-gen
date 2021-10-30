@@ -10,11 +10,11 @@ inputs:
   prefix:
     description: "A prefix to append before all tag names (e.g, debug)"
     required: false
-    default: '.'
+    default: ''
   suffix:
     description: "A suffix to append after all tag names (e.g, a client-specific suffix)"
     required: false
-    default: '.'
+    default: ''
   docker-user:
     description: The docker hub user account (needed if image is private)
     required: false

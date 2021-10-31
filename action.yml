@@ -31,13 +31,15 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - shell: bash
+    - name: Inputs
+      shell: bash
       run: |
         echo "Given slug was: ${{ inputs.slug }}"
         echo "Given prefix was: ${{ inputs.prefix }}"
         echo "Given suffix was: ${{ inputs.suffix }}"
         echo "Given image was: ${{ inputs.image-name }}"
     - id: tag-generator
+      name: "Process slug"
       env:
         ACTION_PATH: "${{ github.action_path }}"
         DOCKER_USER: "${{ inputs.docker-user }}"
@@ -46,14 +48,14 @@ runs:
       run: |
         chmod 777 "$ACTION_PATH"/tag-gen.sh "$ACTION_PATH"/dockertags.sh
         cd "$ACTION_PATH"
-        tags="$(\
+        echo "$(\
           "$ACTION_PATH"/tag-gen.sh ${{ inputs.slug }}${DOCKER_USER:+ -u=$DOCKER_USER}${DOCKER_PASS:+ -p=$DOCKER_PASS}${DOCKER_IMAGE:+ -i=$DOCKER_IMAGE}\
           -prefix=${{ inputs.prefix }} \
           -suffix=${{ inputs.suffix }} \
         )"
       shell: bash
-    - id: list-outputs
-      shell: bash
-      run: |
-        echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
-        echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"
+    # - id: list-outputs
+    #   shell: bash
+    #   run: |
+    #     echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
+    #     echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"

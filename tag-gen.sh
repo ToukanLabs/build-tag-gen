@@ -13,9 +13,13 @@ while [[ $# -gt 0 ]]; do
     case $p in
     -suffix*) # Set suffix - ignore if .
         suffix=${1#*=}
+        #remove any leading - (this will be added back later)
+        suffix=${suffix#-}
         ;;
     -prefix*)
         prefix=${1#*=}
+        #remove any trailing - (this will be added back later)
+        prefix=${prefix%-}
         ;;
     -u* | --user*)         # set docker user for private images (optional)
         user="-u ${1#*=} " #trailing space is important
@@ -50,7 +54,7 @@ tags=()
 # Is the slug matches a semver pattern, then create major/minor version
 if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     #strip any leading v
-    slug=${slug/v/}
+    slug=${slug#v}
 
     # split to array
     n=${slug//[!0-9]/ }
@@ -71,7 +75,7 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
             fi # skip if line is blank
 
             # strip any leading v
-            i=${i/v/}
+            i=${i#v}
             # split i to array
             unset x
             unset b

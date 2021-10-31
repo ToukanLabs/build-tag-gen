@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     -semver | --semver | -s) # Specify a semantic version (1.2.3) to search for, can use * as wildcard
-        IFS='.' read -ra SEMVER <<<"${2/v/}"
+        IFS='.' read -ra SEMVER <<<"${2#v}"
         major="${SEMVER[0]//\*/$'[0-9]+'}" # if '*' is specificed, then replace with [0-9]+
         minor="${SEMVER[1]//\*/$'[0-9]+'}"
         patch="${SEMVER[2]//\*/$'[0-9]+'}"

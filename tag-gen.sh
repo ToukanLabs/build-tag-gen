@@ -149,12 +149,15 @@ for tag in "${tags[@]}"; do
     outputtags+=("${image:+$image:}${prefix}${tag}${suffix}")
 done
 
-echo "::group::outputs"
 # output the new slug (which may have the leaving v stripped off)
-echo "::set-output name=slug::${slug}"
+echo "::group::New Slug"
+echo $slug
+echo "::endgroup::"
 
+echo "::set-output name=slug::${slug}"
+echo "::group::Tags"
 # output result
-actionoutput=$(printf '%s\n' "${outputtags[@]}") >/dev/null
+actionoutput=$(printf '%s\n' "${outputtags[@]}")
 # cleanup to allow GHA to process multi-line string as an output
 
 actionoutput="${actionoutput//'%'/'%25'}"

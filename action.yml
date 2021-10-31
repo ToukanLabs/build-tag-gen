@@ -1,8 +1,8 @@
-name: 'Generate tags'
-description: 'Genertaes semver compatible tags for docker images based on a slug reference (i.e, / converted to _)'
+name: "Generate tags"
+description: "Genertaes semver compatible tags for docker images based on a slug reference (i.e, / converted to _)"
 inputs:
-  slug:  
-    description: 'the branch/tag reference in slug format (/ converted to _)'
+  slug:
+    description: "the branch/tag reference in slug format (/ converted to _)"
     required: true
   image-name:
     description: A docker image name. e.g, myrepo/myimage
@@ -10,11 +10,11 @@ inputs:
   prefix:
     description: "A prefix to append before all tag names (e.g, debug)"
     required: false
-    default: ''
+    default: ""
   suffix:
     description: "A suffix to append after all tag names (e.g, a client-specific suffix)"
     required: false
-    default: ''
+    default: ""
   docker-user:
     description: The docker hub user account (needed if image is private)
     required: false
@@ -54,8 +54,8 @@ runs:
           -suffix=${{ inputs.suffix }} \
         )"
       shell: bash
-    # - id: list-outputs
-    #   shell: bash
-    #   run: |
-    #     echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
-    #     echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"
+    - id: list-outputs
+      shell: bash
+      run: |
+        echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
+        echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"

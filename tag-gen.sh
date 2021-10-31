@@ -149,5 +149,8 @@ for tag in "${tags[@]}"; do
     outputtags+=("${image:+$image:}${prefix}${tag}${suffix}")
 done
 
+# output the new slug (which may have the leaving v stripped off)
+echo "::set-output name=slug::${slug}"
+
 # output result
 printf '%s\n' "${outputtags[@]}"

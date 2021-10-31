@@ -25,6 +25,9 @@ outputs:
   tags:
     description: "A newline separated list of tags"
     value: ${{ steps.tag-generator.outputs.tags }}
+  slug:
+    description: "A new slug with any leading v stripped off for semvers"
+    value: "Slug:\n${{ steps.tag-generator.outputs.slug }}"
 runs:
   using: "composite"
   steps:
@@ -44,12 +47,13 @@ runs:
         chmod 777 "$ACTION_PATH"/tag-gen.sh "$ACTION_PATH"/dockertags.sh
         cd "$ACTION_PATH"
         tags="$(\
-          ${{ github.action_path }}/tag-gen.sh ${{ inputs.slug }}${DOCKER_USER:+ -u=$DOCKER_USER}${DOCKER_PASS:+ -p=$DOCKER_PASS}${DOCKER_IMAGE:+ -i=$DOCKER_IMAGE}\
+          "$ACTION_PATH"/tag-gen.sh ${{ inputs.slug }}${DOCKER_USER:+ -u=$DOCKER_USER}${DOCKER_PASS:+ -p=$DOCKER_PASS}${DOCKER_IMAGE:+ -i=$DOCKER_IMAGE}\
           -prefix=${{ inputs.prefix }} \
           -suffix=${{ inputs.suffix }} \
         )"
       shell: bash
-    - id: outputs
+    - id: list-outputs
       shell: bash
       run: |
         echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
+        echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"

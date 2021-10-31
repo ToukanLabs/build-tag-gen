@@ -156,8 +156,8 @@ echo "::set-output name=slug::${slug}"
 actionoutput=$(printf '%s\n' "${outputtags[@]}")
 # cleanup to allow GHA to process multi-line string as an output
 
-actionoutput="${outputtags[*]//'%'/'%25'}"
-actionoutput="${outputtags[*]//$'\n'/'%0A'}"
-actionoutput="${outputtags[*]//$'\r'/'%0D'}"
+actionoutput="${actionoutput//'%'/'%25'}"
+actionoutput="${actionoutput//$'\n'/'%0A'}"
+actionoutput="${actionoutput//$'\r'/'%0D'}"
 
 echo "::set-output name=tags::$actionoutput"

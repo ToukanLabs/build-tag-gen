@@ -21,13 +21,6 @@ inputs:
   docker-pass:
     description: The docker hub account password (needed if image is private)
     required: false
-outputs:
-  tags:
-    description: "A newline separated list of tags"
-    value: ${{ steps.tag-generator.outputs.tags }}
-  slug:
-    description: "A new slug with any leading v stripped off for semvers"
-    value: "Slug:\n${{ steps.tag-generator.outputs.slug }}"
 runs:
   using: "composite"
   steps:
@@ -59,3 +52,10 @@ runs:
       run: |
         echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
         echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"
+outputs:
+  tags:
+    description: "A newline separated list of tags"
+    value: ${{ steps.tag-generator.outputs.tags }}
+  slug:
+    description: "A new slug with any leading v stripped off for semvers"
+    value: "Slug:\n${{ steps.tag-generator.outputs.slug }}"

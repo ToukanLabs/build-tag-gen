@@ -151,18 +151,22 @@ done
 
 # output the new slug (which may have the leaving v stripped off)
 echo "::group::New Slug"
-echo $slug
+echo "${slug}"
+echo "::set-output name=slug::${slug}"
 echo "::endgroup::"
 
-echo "::set-output name=slug::${slug}"
 echo "::group::Tags"
 # output result
 actionoutput=$(printf '%s\n' "${outputtags[@]}")
+
+echo "Before: ${actionoutput}"
 # cleanup to allow GHA to process multi-line string as an output
 
 actionoutput="${actionoutput//'%'/'%25'}"
 actionoutput="${actionoutput//$'\n'/'%0A'}"
 actionoutput="${actionoutput//$'\r'/'%0D'}"
+
+echo "After: ${actionoutput}"
 
 echo "::set-output name=tags::$actionoutput"
 echo "::endgroup::"

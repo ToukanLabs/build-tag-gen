@@ -58,4 +58,4 @@ outputs:
     value: ${{ steps.tag-generator.outputs.tags }}
   slug:
     description: "A new slug with any leading v stripped off for semvers"
-    value: "Slug:\n${{ steps.tag-generator.outputs.slug }}"
+    value: "${{ steps.tag-generator.outputs.slug }}"

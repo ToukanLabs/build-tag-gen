@@ -1,4 +1,11 @@
-# build-tag-gen
+build-tag-gen
+-------------
+-------------
+
+- [Purpose](#purpose)
+- [Inputs](#inputs)
+- [Outputs](#outputs)
+# Purpose
 Generates build tags to use with docker builds, based on the github branch/tag name.
 
 The input branch/tag name should be in `slug` format (i.e. / converted to undescore, etc)
@@ -26,3 +33,20 @@ If an `image-name` is given, this will be prepended to the tag names in the form
 When an `image-name` is given **AND** the `slug` is a semver format, then existing tags will be parsed from docker hub, and major / minor tags will only be added if there is no newer respective major / minor version.
 
 If there is no newer version aviable on docker hub, then the `latest` tag will be added (with relevant pre/suffixes)
+
+# Inputs
+
+| Name | description |
+|------|-------------|
+| `docker-pass` | The docker hub account password (needed if image is private) |
+| `docker-user` | The docker hub user account (needed if image is private) |
+| `image-name` | A docker image name. e.g, myrepo/myimage. If provided, the image name will be prepended to the start of each tag. Also any existing semantic version tags for the image will be used to determine if latest, x.x and x version tags should be added |
+| `prefix` | An optional prefix to append before all tag names (e.g, debug) |
+| `suffix` | An optional suffix to append after all tag names (e.g, a client-specific suffix) |
+| `slug` | **Mandatory**.  This will be used as the root for the tag(s). Cannot contain any characters that are not allowed in docker image tags (e.g, `/` shoulf be converted to `_`  etc.) |
+
+# Outputs
+| Name | description |
+|------|-------------|
+| `tags` | a newline separated list of tags. This can be used as an input to the [`docker/build-push-action`](https://github.com/docker/build-push-action) action. |
+| `slug` | An adjusted slug with any leading `v` stripped from the front (for semantic version formatted tags only). This may be useful when referring to the image tag in later actions | 

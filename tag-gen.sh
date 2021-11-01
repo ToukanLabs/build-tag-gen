@@ -159,14 +159,11 @@ echo "::group::Tags"
 # output result
 actionoutput=$(printf '%s\n' "${outputtags[@]}")
 
-echo "Before: ${actionoutput}"
-# cleanup to allow GHA to process multi-line string as an output
+echo "${actionoutput}"
 
+# cleanup to allow GHA to process multi-line string as an output
 actionoutput="${actionoutput//'%'/'%25'}"
 actionoutput="${actionoutput//$'\n'/'%0A'}"
 actionoutput="${actionoutput//$'\r'/'%0D'}"
-
-echo "After: ${actionoutput}"
-
 echo "::set-output name=tags::$actionoutput"
 echo "::endgroup::"

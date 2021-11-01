@@ -47,11 +47,6 @@ runs:
           -suffix=${{ inputs.suffix }} \
         )"
       shell: bash
-    - id: list-outputs
-      shell: bash
-      run: |
-        echo -e "Tags:\n${{ steps.tag-generator.outputs.tags }}"
-        echo -e "Slug:\n${{ steps.tag-generator.outputs.slug }}"
 outputs:
   tags:
     description: "A newline separated list of tags"

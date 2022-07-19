@@ -15,6 +15,10 @@ inputs:
     description: "A suffix to append after all tag names (e.g, a client-specific suffix)"
     required: false
     default: ""
+  allow-latest-tag:
+    description: "if false, will prevent a latest tag being added, even if this is the newest version"
+    required: false
+    default: "true"
   docker-user:
     description: The docker hub user account (needed if image is private)
     required: false
@@ -45,6 +49,7 @@ runs:
           "$ACTION_PATH"/tag-gen.sh ${{ inputs.slug }}${DOCKER_USER:+ -u=$DOCKER_USER}${DOCKER_PASS:+ -p=$DOCKER_PASS}${DOCKER_IMAGE:+ -i=$DOCKER_IMAGE}\
           -prefix=${{ inputs.prefix }} \
           -suffix=${{ inputs.suffix }} \
+          --allow-latest-tag=${{ inputs.allow-latest-tag }} \
         )"
       shell: bash
 outputs:

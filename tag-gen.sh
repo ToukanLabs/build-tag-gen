@@ -2,6 +2,7 @@
 slug=""
 prefix=''
 suffix=""
+allow_latest=1
 user=''
 pass=''
 image=''
@@ -20,6 +21,14 @@ while [[ $# -gt 0 ]]; do
         prefix=${1#*=}
         #remove any trailing - (this will be added back later)
         prefix=${prefix%-}
+        ;;
+    --allow-latest-tag*)
+        #do not add the latest tag, even if this is the newest version
+        if [ "${1#*=}" == "false" ] || [ "${1#*=}" == "0" ]; then
+            allow_latest=0
+        else
+            allow_latest=1
+        fi
         ;;
     -u* | --user*)         # set docker user for private images (optional)
         user="-u ${1#*=} " #trailing space is important
@@ -114,7 +123,7 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
         fi
 
         # if no newer major version exixts, then update the latest
-        if [ $newer_patch -eq 0 ] && [ $newer_minor -eq 0 ] && [ $newer_major -eq 0 ]; then
+        if [ $allow_latest -eq 1 ] && [ $newer_patch -eq 0 ] && [ $newer_minor -eq 0 ] && [ $newer_major -eq 0 ]; then
             tags+=("latest")
         fi
     else

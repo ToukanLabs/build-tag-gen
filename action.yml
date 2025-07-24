@@ -22,6 +22,10 @@ inputs:
     description: "if false, will prevent a latest tag being added, even if this is the newest version"
     required: false
     default: "true"
+  is-primary:
+    description: "if true, will add the default latest even when used with prefix or suffix, when the semver slug is the latest version"
+    required: false
+    default: "false"
   docker-user:
     description: The docker hub user account (needed if image is private)
     required: false

@@ -2,6 +2,8 @@
 allow_latest=1
 arch=''
 image=''
+is_primary=0
+outputtags=()
 pass=''
 prefix=''
 slug=""
@@ -29,6 +31,14 @@ while [[ $# -gt 0 ]]; do
             allow_latest=0
         else
             allow_latest=1
+        fi
+        ;;
+    --is-primary*)
+        # if true, will add the default latest even when used with prefix or suffix, when the semver slug is the latest version
+        if [ "${1#*=}" == "true" ] || [ "${1#*=}" == "1" ]; then
+            is_primary=1
+        else
+            is_primary=0
         fi
         ;;
     -u* | --user*)         # set docker user for private images (optional)
@@ -63,7 +73,7 @@ tags=()
 
 [ -n "$prefix" ] && prefix="$prefix-" || :
 [ -n "$suffix" ] && suffix="-$suffix" || :
-[ -n "$arch" ] && suffix="${suffix}-$arch" || :
+[ -n "$arch" ] && arch="-$arch" || :
 
 # Is the slug matches a semver pattern, then create major/minor version
 if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
@@ -78,7 +88,10 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     patch=${a[2]}
 
     if [ -n "$image" ]; then
-        tagscommand="./dockertags.sh "${image}" "${user}""${pass}"-s '*.*.*' -av"
+        tagscommand="./dockertags.sh \"${image}\" \"${user}\"\"${pass}\"-s '*.*.*' -av"
+        [ -n "$prefix" ] && tagscommand+=" -prefix ${prefix}" || :
+        [ -n "$suffix" ] && tagscommand+=" -suffix ${suffix}" || :
+        
         readarray -t major_matches <<<"$(eval $tagscommand)"
         newer_major=0
         newer_minor=0
@@ -117,7 +130,7 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
 
         done
 
-        # if no newer patch version existsw, then add the minor tag
+        # if no newer patch version exists, then add the minor tag
         if [ $newer_patch -eq 0 ]; then
             tags+=("${major}.${minor}")
         fi
@@ -127,7 +140,7 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
             tags+=("${major}")
         fi
 
-        # if no newer major version exixts, then update the latest
+        # if no newer major version exists, then update the latest
         if [ $allow_latest -eq 1 ] && [ $newer_patch -eq 0 ] && [ $newer_minor -eq 0 ] && [ $newer_major -eq 0 ]; then
             tags+=("latest")
         fi
@@ -139,6 +152,17 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     fi
     # always set the patch version, regardless
     tags+=("${major}.${minor}.${patch}")
+
+    # if is_primary is true/1, and there is either a prefix or suffix, then also add the tags to the output immediately without prefix or suffix (the pre/suffix tags are added later)
+    has_prefix_or_suffix=0
+    if [ -n "$prefix" ] || [ -n "$suffix" ]; then
+        has_prefix_or_suffix=1
+    fi
+    if { [ "$is_primary" = "1" ] || [ "$is_primary" = "true" ]; } && [ $has_prefix_or_suffix -eq 1 ]; then
+        for tag in "${tags[@]}"; do
+            outputtags+=("${image:+$image:}${tag}${arch}")
+        done
+    fi
 else
     # If this wasn't a semver tag, then set the tag using the slug
     tags+=("${slug}")
@@ -157,27 +181,27 @@ fi
 IFS=$'\n' tags=($(sort -V <<<"${tags[*]}"))
 unset IFS
 
-outputtags=()
 # add image name, prefix and suffix to all tags (image adds a trailing ':'')
 for tag in "${tags[@]}"; do
-    outputtags+=("${image:+$image:}${prefix}${tag}${suffix}")
+    outputtags+=("${image:+$image:}${prefix}${tag}${suffix}${arch}")
 done
 
-# output the new slug (which may have the leaving v stripped off)
+# output the new slug (which may have the leading v stripped off)
 echo "::group::New Slug"
 echo "${slug}"
-echo "::set-output name=slug::${slug}"
+echo "slug=${slug}" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
 
-echo "::group::Tags"
 # output result
+echo "::group::Tags"
 actionoutput=$(printf '%s\n' "${outputtags[@]}")
-
 echo "${actionoutput}"
 
-# cleanup to allow GHA to process multi-line string as an output
-actionoutput="${actionoutput//'%'/'%25'}"
-actionoutput="${actionoutput//$'\n'/'%0A'}"
-actionoutput="${actionoutput//$'\r'/'%0D'}"
-echo "::set-output name=tags::$actionoutput"
+# Write tags output with real newlines
+{
+  echo "tags<<EOF"
+  echo "${actionoutput}"
+  echo "EOF"
+} >> "$GITHUB_OUTPUT"
+
 echo "::endgroup::"

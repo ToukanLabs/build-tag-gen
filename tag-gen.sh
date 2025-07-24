@@ -41,7 +41,7 @@ while [[ $# -gt 0 ]]; do
         image="${1#*=}" #trailing space is important
         ;;
     -arch*) # set the architecture for the image (optional)
-        arch="${1#*=} " #trailing space is important
+        arch="${1#*=}"
         ;;
     *) # add everything else to the params array for processing in the next section
         PARAMS+=("$1")

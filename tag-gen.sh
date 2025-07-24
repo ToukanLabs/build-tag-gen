@@ -1,11 +1,12 @@
 #!/bin/bash
-slug=""
-prefix=''
-suffix=""
 allow_latest=1
-user=''
-pass=''
+arch=''
 image=''
+pass=''
+prefix=''
+slug=""
+suffix=""
+user=''
 
 PARAMS=()
 while [[ $# -gt 0 ]]; do
@@ -39,6 +40,9 @@ while [[ $# -gt 0 ]]; do
     -i* | --image*)     # set docker image for semver testing (optional)
         image="${1#*=}" #trailing space is important
         ;;
+    -arch*) # set the architecture for the image (optional)
+        arch="${1#*=} " #trailing space is important
+        ;;
     *) # add everything else to the params array for processing in the next section
         PARAMS+=("$1")
         ;;
@@ -59,6 +63,7 @@ tags=()
 
 [ -n "$prefix" ] && prefix="$prefix-" || :
 [ -n "$suffix" ] && suffix="-$suffix" || :
+[ -n "$arch" ] && suffix="${suffix}-$arch" || :
 
 # Is the slug matches a semver pattern, then create major/minor version
 if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
@@ -132,7 +137,7 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
         tags+=("${major}.${minor}")
 
     fi
-    # always set the patch version, regradless
+    # always set the patch version, regardless
     tags+=("${major}.${minor}.${patch}")
 else
     # If this wasn't a semver tag, then set the tag using the slug

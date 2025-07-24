@@ -43,7 +43,8 @@ If there is no newer version aviable on docker hub, then the `latest` tag will b
 | `image-name` | A docker image name. e.g, myrepo/myimage. If provided, the image name will be prepended to the start of each tag. Also any existing semantic version tags for the image will be used to determine if latest, x.x and x version tags should be added |
 | `prefix` | An optional prefix to append before all tag names (e.g, debug) |
 | `suffix` | An optional suffix to append after all tag names (e.g, a client-specific suffix) |
-| `slug` | **Mandatory**.  This will be used as the root for the tag(s). Cannot contain any characters that are not allowed in docker image tags (e.g, `/` shoulf be converted to `_`  etc.) |
+| `arch` | An optional architecture suffix to append after all tag names (e.g, `amd64`, `arm64`, etc). This is useful when building multi-arch images. |
+| `slug` | **Mandatory**.  This will be used as the root for the tag(s). Cannot contain any characters that are not allowed in docker image tags (e.g, `/` should be converted to `_`  etc.) |
 
 # Outputs
 | Name | description |

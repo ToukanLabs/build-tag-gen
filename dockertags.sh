@@ -123,6 +123,21 @@ fi
 # output the tags
 mapfile -t tags < <(echo "$curl_output" | grep -o '"tags":[^]]*' | sed 's/"tags":\[//' | tr -d '"' | tr ',' '\n' | sed '/^\s*$/d')
 
+# Flexible filtering: prefix, suffix, grepstring
+filtered_tags=("${tags[@]}")
+
+# Flexible filtering: prefix, semver, suffix, grepstring
+if [ -n "$prefix" ]; then
+    pattern="^$prefix"
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -- "$pattern")
+fi
+
+
+if [ -n "$suffix" ]; then
+    pattern="${suffix}$"
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -- "$pattern")
+fi
+
 # If semver or prefix/suffix is specified, filter tags accordingly
 if [ -n "$major" ] || [ -n "$prefix" ] || [ -n "$suffix" ]; then
     # Build regex pattern

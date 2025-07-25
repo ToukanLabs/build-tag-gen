@@ -87,36 +87,12 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     minor=${a[1]}
     patch=${a[2]}
 
-    #output debug info
-    echo "::group::Debug Info"
-    echo "Given slug was: ${slug}"
-    echo "Major version: ${major}"
-    echo "Minor version: ${minor}"
-    echo "Patch version: ${patch}"
-    echo "Given prefix was: ${prefix}"
-    echo "Given suffix was: ${suffix}"
-    echo "Given arch was: ${arch}"
-    echo "Allow latest tag: ${allow_latest}"
-    echo "::endgroup::"
-
     if [ -n "$image" ]; then
-        tagscommand="./dockertags.sh \"${image}\" -u \"${user}\" -p \"${pass}\" -s '*.*.*' -av"
-        [ -n "$prefix" ] && tagscommand+=" -prefix ${prefix}" || :
-        [ -n "$suffix" ] && tagscommand+=" -suffix ${suffix}" || :
-        # # For tagscommand, append arch to suffix if both are present
-        # if [ -n "$suffix" ] && [ -n "$arch" ]; then
-        #     tagscommand+=" -suffix '${suffix}${arch}'"
-        # elif [ -n "$suffix" ]; then
-        #     tagscommand+=" -suffix '${suffix}'"
-        # elif [ -n "$arch" ]; then
-        #     tagscommand+=" -suffix '${arch}'"
-        # fi
-        
-    # debug the command
-        echo "Running command: $tagscommand"
+        tagscommand="./dockertags.sh '${image}' -u '${user}' -p '${pass}' -s '*.*.*' -av"
+        [ -n "$prefix" ] && tagscommand+=" -prefix '${prefix}'" || :
+        [ -n "$suffix" ] && tagscommand+=" -suffix '${suffix}'" || :
 
         # Execute the command and capture output
-
         command_output=$(eval $tagscommand)
         status=$?
         if [ $status -ne 0 ]; then
@@ -125,19 +101,26 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
             exit $status
         fi
 
-        # debug
-        # echo -e "Command output:\n$command_output"
-
 readarray -t major_matches <<<"$command_output"
         newer_major=0
         newer_minor=0
         newer_patch=0
         semver_regex='^v?([0-9]+)\.([0-9]+)\.([0-9]+)'
         for i in "${major_matches[@]}"; do
-            # echo "DEBUG: processing from major_matches: $i"
+            
             if [ -z "$i" ]; then
                 continue
             fi # skip if line is blank
+
+            # if a prefix was specified, strip it from the tag when comparing
+            if [ -n "$prefix" ]; then
+                i=${i#"$prefix"}
+            fi
+
+            # if a suffix was specified, strip it from the tag when comparing
+            if [ -n "$suffix" ]; then
+                i=${i%"$suffix"}
+            fi
 
             # Extract semver from tag (e.g. 10.0.11 from mariadb_10.11-10.0.11-arm64)
             if [[ $i =~ $semver_regex ]]; then
@@ -147,7 +130,7 @@ readarray -t major_matches <<<"$command_output"
             else
                 continue # skip tags that don't contain a semver
             fi
-           
+
             # Test to see if there are any newer versions
             if [[ $bmajor -eq $major ]] && [[ $bminor -ge $minor ]] && [[ $bpatch -gt $patch ]]; then
                 newer_patch=1

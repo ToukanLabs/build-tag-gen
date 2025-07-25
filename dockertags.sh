@@ -28,7 +28,7 @@ EXAMPLE:
        dockertags alpine -s 3.*.1
     
     - list all tags from a private repository
-       dockertagas myprivate/image -u myuser -p mypassword
+       dockertags myprivate/image -u myuser -p mypassword
 
 HELP
 fi
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
         user=$2
         shift
         ;;
-    -pass | --pass | -p) # Set docker passowrd
+    -pass | --pass | -p) # Set docker password
         pass=$2
         shift
         ;;
@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     -semver | --semver | -s) # Specify a semantic version (1.2.3) to search for, can use * as wildcard
         IFS='.' read -ra SEMVER <<<"${2#v}"
-        major="${SEMVER[0]//\*/$'[0-9]+'}" # if '*' is specificed, then replace with [0-9]+
+        major="${SEMVER[0]//\*/$'[0-9]+'}" # if '*' is specified, then replace with [0-9]+
         minor="${SEMVER[1]//\*/$'[0-9]+'}"
         patch="${SEMVER[2]//\*/$'[0-9]+'}"
         shift
@@ -88,24 +88,73 @@ set -- "${PARAMS[@]}" # restore positional parameters
 
 image="$1"
 
-# If a semver has been specified, then search it with awk
-if [ -n "$major" ]; then
-    comparestring='$3 ~ /^'"${prefix}${allowv:+$'v?'}${major}"'\.'"${minor}"'\.'"${patch}${suffix}"'$/ {print $3}'
-    echo $comparestring
-else # just return all tags
-    comparestring='{print $3}'
-fi
+# # If a semver has been specified, then search it with awk
+# if [ -n "$major" ]; then
+#     comparestring='$3 ~ /^'"${prefix}${allowv:+$'v?'}${major}"'\.'"${minor}"'\.'"${patch}${suffix}"'$/ {print $3}'
+#     echo $comparestring
+# else # just return all tags
+#     comparestring='{print $3}'
+# fi
 
-wgetstring="wget -q https://registry.hub.docker.com/v1/repositories/${image}/tags"
-# Add user and password details if a user has been specified
+# if user is specified, then use it to get the tags
+TOKEN=''
 if [ -n "$user" ]; then
-    wgetstring+=" --user ${user} --password ${pass}"
+    TOKEN=$(curl -s -u "$user:$pass" \
+    "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$image:pull" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 fi
 
-tags=$($wgetstring -O - | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n' | awk -F: "$comparestring" | sort -V)
+api_url="https://registry-1.docker.io/v2/$image/tags/list"
+
+if [ -n "$TOKEN" ]; then
+    response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" "$api_url")
+else
+    response=$(curl -s -w "\n%{http_code}" "$api_url")
+fi
+
+curl_output=$(echo "$response" | sed '$d')
+http_code=$(echo "$response" | tail -n1)
+
+if [ "$http_code" -ne 200 ]; then
+    echo "ERROR: Docker Registry API returned HTTP $http_code"
+    echo "$curl_output"
+    exit 1
+fi
+
+# output the tags
+mapfile -t tags < <(echo "$curl_output" | grep -o '"tags":[^]]*' | sed 's/"tags":\[//' | tr -d '"' | tr ',' '\n' | sed '/^\s*$/d')
+
+# Flexible filtering: prefix, suffix, grepstring
+filtered_tags=("${tags[@]}")
+
+# Flexible filtering: prefix, semver, suffix, grepstring
+if [ -n "$prefix" ]; then
+    pattern="^$prefix"
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -- "$pattern")
+fi
+
+
+if [ -n "$suffix" ]; then
+    pattern="${suffix}$"
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -- "$pattern")
+fi
+
+# If semver or prefix/suffix is specified, filter tags accordingly
+if [ -n "$major" ] || [ -n "$prefix" ] || [ -n "$suffix" ]; then
+    # Build regex pattern
+    pattern="^"
+    [ -n "$prefix" ] && pattern+="$prefix"
+    if [ -n "$major" ]; then
+        [ "$allowv" = "true" ] && pattern+="v?"
+        pattern+="$major\\.$minor\\.$patch"
+    fi
+    [ -n "$suffix" ] && pattern+="$suffix"
+    pattern+="$"
+    # Filter tags
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -E "$pattern")
+fi
 
 if [ -n "$grepstring" ]; then
-    tags=$(echo "${tags}" | grep "$grepstring")
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep "$grepstring")
 fi
 
-echo "${tags}"
+printf "%s\n" "${tags[@]}"

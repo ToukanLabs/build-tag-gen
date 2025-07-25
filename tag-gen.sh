@@ -42,10 +42,10 @@ while [[ $# -gt 0 ]]; do
         fi
         ;;
     -u* | --user*)         # set docker user for private images (optional)
-        user="-u ${1#*=} " #trailing space is important
+        user="${1#*=}"
         ;;
     -p* | --pass*)         # set docker password for private images (optional)
-        pass="-p ${1#*=} " #trailing space is important
+        pass="${1#*=}"
         ;;
     -i* | --image*)     # set docker image for semver testing (optional)
         image="${1#*=}" #trailing space is important
@@ -88,32 +88,49 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     patch=${a[2]}
 
     if [ -n "$image" ]; then
-        tagscommand="./dockertags.sh \"${image}\" \"${user}\"\"${pass}\"-s '*.*.*' -av"
-        [ -n "$prefix" ] && tagscommand+=" -prefix ${prefix}" || :
-        [ -n "$suffix" ] && tagscommand+=" -suffix ${suffix}" || :
-        
-        readarray -t major_matches <<<"$(eval $tagscommand)"
+        tagscommand="./dockertags.sh '${image}' -u '${user}' -p '${pass}' -s '*.*.*' -av"
+        [ -n "$prefix" ] && tagscommand+=" -prefix '${prefix}'" || :
+        [ -n "$suffix" ] && tagscommand+=" -suffix '${suffix}'" || :
+
+        # Execute the command and capture output
+        command_output=$(eval $tagscommand)
+        status=$?
+        if [ $status -ne 0 ]; then
+            safe_tagscommand=$(printf '%s' "$tagscommand" | sed "s|$pass|[REDACTED]|g")
+            echo "Error: Command failed with status $status: $safe_tagscommand" >&2
+            echo "Returned output: $command_output" >&2
+            exit $status
+        fi
+
+readarray -t major_matches <<<"$command_output"
         newer_major=0
         newer_minor=0
         newer_patch=0
+        semver_regex='^v?([0-9]+)\.([0-9]+)\.([0-9]+)'
         for i in "${major_matches[@]}"; do
+            
             if [ -z "$i" ]; then
                 continue
             fi # skip if line is blank
 
-            # strip any leading v
-            i=${i#v}
-            # split i to array
-            unset x
-            unset b
-            unset bmajor
-            unset bminor
-            unset bpatch
-            x=${i//[!0-9]/ }
-            b=(${x//\./ })
-            bmajor=${b[0]}
-            bminor=${b[1]}
-            bpatch=${b[2]}
+            # if a prefix was specified, strip it from the tag when comparing
+            if [ -n "$prefix" ]; then
+                i=${i#"$prefix"}
+            fi
+
+            # if a suffix was specified, strip it from the tag when comparing
+            if [ -n "$suffix" ]; then
+                i=${i%"$suffix"}
+            fi
+
+            # Extract semver from tag (e.g. 10.0.11 from mariadb_10.11-10.0.11-arm64)
+            if [[ $i =~ $semver_regex ]]; then
+                bmajor="${BASH_REMATCH[1]}"
+                bminor="${BASH_REMATCH[2]}"
+                bpatch="${BASH_REMATCH[3]}"
+            else
+                continue # skip tags that don't contain a semver
+            fi
 
             # Test to see if there are any newer versions
             if [[ $bmajor -eq $major ]] && [[ $bminor -ge $minor ]] && [[ $bpatch -gt $patch ]]; then
@@ -184,6 +201,14 @@ unset IFS
 # add image name, prefix and suffix to all tags (image adds a trailing ':'')
 for tag in "${tags[@]}"; do
     outputtags+=("${image:+$image:}${prefix}${tag}${suffix}${arch}")
+done
+
+# convert any characters that are not suitable in docker tags for all tags
+for i in "${!outputtags[@]}"; do
+    # replace any characters that are not alphanumeric, underscore, hyphen, or dot with an underscore
+    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/[^a-zA-Z0-9_.-]/_/g')
+    # remove any leading or trailing underscores
+    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/^_//; s/_$//')
 done
 
 # output the new slug (which may have the leading v stripped off)

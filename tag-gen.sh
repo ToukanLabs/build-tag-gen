@@ -25,12 +25,12 @@ while [[ $# -gt 0 ]]; do
         #remove any trailing - (this will be added back later)
         prefix=${prefix%-}
         ;;
-    --allow-latest-tag*)
+    --allow-latest-tag*|-latest*|-l*)
         #do not add the latest tag, even if this is the newest version
-        if [ "${1#*=}" == "false" ] || [ "${1#*=}" == "0" ]; then
-            allow_latest=0
-        else
+        if [ "${1#*=}" == "true" ] || [ "${1#*=}" == "1" ]; then
             allow_latest=1
+        else
+            allow_latest=0
         fi
         ;;
     --is-primary*)

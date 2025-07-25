@@ -44,6 +44,7 @@ runs:
         echo "Given image was: ${{ inputs.image-name }}"
         echo "Given arch was: ${{ inputs.arch }}"
         echo "Allow latest tag: ${{ inputs.allow-latest-tag }}"
+        echo "Is primary tag: ${{ inputs.is-primary }}"
     - id: tag-generator
       name: "Process slug"
       env:
@@ -60,6 +61,7 @@ runs:
           -suffix=${{ inputs.suffix }} \
           -arch=${{ inputs.arch }} \
           --allow-latest-tag=${{ inputs.allow-latest-tag }} \
+          --is-primary=${{ inputs.is-primary }} \
         )"
       shell: bash
 outputs:

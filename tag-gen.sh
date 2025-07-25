@@ -198,17 +198,17 @@ fi
 IFS=$'\n' tags=($(sort -V <<<"${tags[*]}"))
 unset IFS
 
+# convert any characters that are not suitable in docker tags for all tags
+for i in "${!tags[@]}"; do
+    # replace any characters that are not alphanumeric, underscore, hyphen, or dot with an underscore
+    tags[$i]=$(echo "${tags[$i]}" | sed 's/[^a-zA-Z0-9_.-]/_/g')
+    # remove any leading or trailing underscores
+    tags[$i]=$(echo "${tags[$i]}" | sed 's/^_//; s/_$//')
+done
+
 # add image name, prefix and suffix to all tags (image adds a trailing ':'')
 for tag in "${tags[@]}"; do
     outputtags+=("${image:+$image:}${prefix}${tag}${suffix}${arch}")
-done
-
-# convert any characters that are not suitable in docker tags for all tags
-for i in "${!outputtags[@]}"; do
-    # replace any characters that are not alphanumeric, underscore, hyphen, or dot with an underscore
-    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/[^a-zA-Z0-9_.-]/_/g')
-    # remove any leading or trailing underscores
-    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/^_//; s/_$//')
 done
 
 # output the new slug (which may have the leading v stripped off)
@@ -222,7 +222,7 @@ echo "::group::Tags"
 actionoutput=$(printf '%s\n' "${outputtags[@]}")
 echo "${actionoutput}"
 
-# Write tags output with real newlines
+# Write tags output, one tag per line
 {
   echo "tags<<EOF"
   echo "${actionoutput}"

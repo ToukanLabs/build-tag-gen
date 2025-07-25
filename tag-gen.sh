@@ -127,30 +127,26 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
         # debug
         # echo -e "Command output:\n$command_output"
 
-        readarray -t major_matches <<<"$command_output"
+readarray -t major_matches <<<"$command_output"
         newer_major=0
         newer_minor=0
         newer_patch=0
+        semver_regex='^v?([0-9]+)\.([0-9]+)\.([0-9]+)'
         for i in "${major_matches[@]}"; do
-        # echo "DEBUG: processing from major_matches: $i"
+            # echo "DEBUG: processing from major_matches: $i"
             if [ -z "$i" ]; then
                 continue
             fi # skip if line is blank
 
-            # strip any leading v
-            i=${i#v}
-            # split i to array
-            unset x
-            unset b
-            unset bmajor
-            unset bminor
-            unset bpatch
-            x=${i//[!0-9]/ }
-            b=(${x//\./ })
-            bmajor=${b[0]}
-            bminor=${b[1]}
-            bpatch=${b[2]}
-
+            # Extract semver from tag (e.g. 10.0.11 from mariadb_10.11-10.0.11-arm64)
+            if [[ $i =~ $semver_regex ]]; then
+                bmajor="${BASH_REMATCH[1]}"
+                bminor="${BASH_REMATCH[2]}"
+                bpatch="${BASH_REMATCH[3]}"
+            else
+                continue # skip tags that don't contain a semver
+            fi
+           
             # Test to see if there are any newer versions
             if [[ $bmajor -eq $major ]] && [[ $bminor -ge $minor ]] && [[ $bpatch -gt $patch ]]; then
                 newer_patch=1
@@ -220,6 +216,14 @@ unset IFS
 # add image name, prefix and suffix to all tags (image adds a trailing ':'')
 for tag in "${tags[@]}"; do
     outputtags+=("${image:+$image:}${prefix}${tag}${suffix}${arch}")
+done
+
+# convert any characters that are not suitable in docker tags for all tags
+for i in "${!outputtags[@]}"; do
+    # replace any characters that are not alphanumeric, underscore, hyphen, or dot with an underscore
+    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/[^a-zA-Z0-9_.-]/_/g')
+    # remove any leading or trailing underscores
+    outputtags[$i]=$(echo "${outputtags[$i]}" | sed 's/^_//; s/_$//')
 done
 
 # output the new slug (which may have the leading v stripped off)

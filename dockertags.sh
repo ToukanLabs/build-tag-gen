@@ -96,18 +96,6 @@ else # just return all tags
     comparestring='{print $3}'
 fi
 
-# # output debug info
-# echo "::group::DEBUG: dockertag Parameters"
-# echo "DEBUG: User: $user"
-# echo "DEBUG: Image: $image"
-# echo "DEBUG: Major: $major"
-# echo "DEBUG: Minor: $minor"
-# echo "DEBUG: Patch: $patch"
-# echo "DEBUG: Prefix: $prefix"
-# echo "DEBUG: Suffix: $suffix"
-# echo "DEBUG: Grep string: $grepstring"
-# echo "::endgroup::"
-
 # if user is specified, then use it to get the tags
 TOKEN=''
 if [ -n "$user" ]; then
@@ -132,23 +120,11 @@ if [ "$http_code" -ne 200 ]; then
     exit 1
 fi
 
-# DEBUG information
-# echo "DEBUG: API URL: $api_url"
-# echo "DEBUG: Response: $curl_output"
-
 # output the tags
 mapfile -t tags < <(echo "$curl_output" | grep -o '"tags":[^]]*' | sed 's/"tags":\[//' | tr -d '"' | tr ',' '\n' | sed '/^\s*$/d')
 
 if [ -n "$grepstring" ]; then
     mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep "$grepstring")
 fi
-
-# echo "DEBUG: Tags found: ${#tags[@]}"
-# echo "***********"
-
-# remove any tags that do not contain "10"
-tags=($(printf "%s\n" "${tags[@]}" | grep "10"))
-#remove any tags containing v9
-tags=($(printf "%s\n" "${tags[@]}" | grep -v "v9"))
 
 printf "%s\n" "${tags[@]}"

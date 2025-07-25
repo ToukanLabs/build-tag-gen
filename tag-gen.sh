@@ -102,14 +102,15 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     if [ -n "$image" ]; then
         tagscommand="./dockertags.sh \"${image}\" -u \"${user}\" -p \"${pass}\" -s '*.*.*' -av"
         [ -n "$prefix" ] && tagscommand+=" -prefix ${prefix}" || :
-        # For tagscommand, append arch to suffix if both are present
-        if [ -n "$suffix" ] && [ -n "$arch" ]; then
-            tagscommand+=" -suffix '${suffix}${arch}'"
-        elif [ -n "$suffix" ]; then
-            tagscommand+=" -suffix '${suffix}'"
-        elif [ -n "$arch" ]; then
-            tagscommand+=" -suffix '${arch}'"
-        fi
+        [ -n "$suffix" ] && tagscommand+=" -suffix ${suffix}" || :
+        # # For tagscommand, append arch to suffix if both are present
+        # if [ -n "$suffix" ] && [ -n "$arch" ]; then
+        #     tagscommand+=" -suffix '${suffix}${arch}'"
+        # elif [ -n "$suffix" ]; then
+        #     tagscommand+=" -suffix '${suffix}'"
+        # elif [ -n "$arch" ]; then
+        #     tagscommand+=" -suffix '${arch}'"
+        # fi
         
     # debug the command
         echo "Running command: $tagscommand"

@@ -88,13 +88,13 @@ set -- "${PARAMS[@]}" # restore positional parameters
 
 image="$1"
 
-# If a semver has been specified, then search it with awk
-if [ -n "$major" ]; then
-    comparestring='$3 ~ /^'"${prefix}${allowv:+$'v?'}${major}"'\.'"${minor}"'\.'"${patch}${suffix}"'$/ {print $3}'
-    echo $comparestring
-else # just return all tags
-    comparestring='{print $3}'
-fi
+# # If a semver has been specified, then search it with awk
+# if [ -n "$major" ]; then
+#     comparestring='$3 ~ /^'"${prefix}${allowv:+$'v?'}${major}"'\.'"${minor}"'\.'"${patch}${suffix}"'$/ {print $3}'
+#     echo $comparestring
+# else # just return all tags
+#     comparestring='{print $3}'
+# fi
 
 # if user is specified, then use it to get the tags
 TOKEN=''
@@ -122,6 +122,21 @@ fi
 
 # output the tags
 mapfile -t tags < <(echo "$curl_output" | grep -o '"tags":[^]]*' | sed 's/"tags":\[//' | tr -d '"' | tr ',' '\n' | sed '/^\s*$/d')
+
+# If semver or prefix/suffix is specified, filter tags accordingly
+if [ -n "$major" ] || [ -n "$prefix" ] || [ -n "$suffix" ]; then
+    # Build regex pattern
+    pattern="^"
+    [ -n "$prefix" ] && pattern+="$prefix"
+    if [ -n "$major" ]; then
+        [ "$allowv" = "true" ] && pattern+="v?"
+        pattern+="$major\\.$minor\\.$patch"
+    fi
+    [ -n "$suffix" ] && pattern+="$suffix"
+    pattern+="$"
+    # Filter tags
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep -E "$pattern")
+fi
 
 if [ -n "$grepstring" ]; then
     mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep "$grepstring")

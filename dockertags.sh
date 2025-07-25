@@ -28,7 +28,7 @@ EXAMPLE:
        dockertags alpine -s 3.*.1
     
     - list all tags from a private repository
-       dockertagas myprivate/image -u myuser -p mypassword
+       dockertags myprivate/image -u myuser -p mypassword
 
 HELP
 fi
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
         user=$2
         shift
         ;;
-    -pass | --pass | -p) # Set docker passowrd
+    -pass | --pass | -p) # Set docker password
         pass=$2
         shift
         ;;
@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     -semver | --semver | -s) # Specify a semantic version (1.2.3) to search for, can use * as wildcard
         IFS='.' read -ra SEMVER <<<"${2#v}"
-        major="${SEMVER[0]//\*/$'[0-9]+'}" # if '*' is specificed, then replace with [0-9]+
+        major="${SEMVER[0]//\*/$'[0-9]+'}" # if '*' is specified, then replace with [0-9]+
         minor="${SEMVER[1]//\*/$'[0-9]+'}"
         patch="${SEMVER[2]//\*/$'[0-9]+'}"
         shift
@@ -99,7 +99,7 @@ image="$1"
 # if user is specified, then use it to get the tags
 TOKEN=''
 if [ -n "$user" ]; then
-    TOKEN=$(curl -s -u $user:$pass \
+    TOKEN=$(curl -s -u "$user:$pass" \
     "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$image:pull" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 fi
 

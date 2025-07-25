@@ -96,7 +96,8 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
         command_output=$(eval $tagscommand)
         status=$?
         if [ $status -ne 0 ]; then
-            echo "Error: Command failed with status $status: ${tagscommand//${pass}/[REDACTED]}" >&2
+            safe_tagscommand=$(printf '%s' "$tagscommand" | sed "s|$pass|[REDACTED]|g")
+            echo "Error: Command failed with status $status: $safe_tagscommand" >&2
             echo "Returned output: $command_output" >&2
             exit $status
         fi

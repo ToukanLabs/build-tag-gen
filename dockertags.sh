@@ -96,16 +96,59 @@ else # just return all tags
     comparestring='{print $3}'
 fi
 
-wgetstring="wget -q https://registry.hub.docker.com/v1/repositories/${image}/tags"
-# Add user and password details if a user has been specified
+# # output debug info
+# echo "::group::DEBUG: dockertag Parameters"
+# echo "DEBUG: User: $user"
+# echo "DEBUG: Image: $image"
+# echo "DEBUG: Major: $major"
+# echo "DEBUG: Minor: $minor"
+# echo "DEBUG: Patch: $patch"
+# echo "DEBUG: Prefix: $prefix"
+# echo "DEBUG: Suffix: $suffix"
+# echo "DEBUG: Grep string: $grepstring"
+# echo "::endgroup::"
+
+# if user is specified, then use it to get the tags
+TOKEN=''
 if [ -n "$user" ]; then
-    wgetstring+=" --user ${user} --password ${pass}"
+    TOKEN=$(curl -s -u $user:$pass \
+    "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$image:pull" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 fi
 
-tags=$($wgetstring -O - | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n' | awk -F: "$comparestring" | sort -V)
+api_url="https://registry-1.docker.io/v2/$image/tags/list"
+
+if [ -n "$TOKEN" ]; then
+    response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" "$api_url")
+else
+    response=$(curl -s -w "\n%{http_code}" "$api_url")
+fi
+
+curl_output=$(echo "$response" | sed '$d')
+http_code=$(echo "$response" | tail -n1)
+
+if [ "$http_code" -ne 200 ]; then
+    echo "ERROR: Docker Registry API returned HTTP $http_code"
+    echo "$curl_output"
+    exit 1
+fi
+
+# DEBUG information
+# echo "DEBUG: API URL: $api_url"
+# echo "DEBUG: Response: $curl_output"
+
+# output the tags
+mapfile -t tags < <(echo "$curl_output" | grep -o '"tags":[^]]*' | sed 's/"tags":\[//' | tr -d '"' | tr ',' '\n' | sed '/^\s*$/d')
 
 if [ -n "$grepstring" ]; then
-    tags=$(echo "${tags}" | grep "$grepstring")
+    mapfile -t tags < <(printf "%s\n" "${tags[@]}" | grep "$grepstring")
 fi
 
-echo "${tags}"
+# echo "DEBUG: Tags found: ${#tags[@]}"
+# echo "***********"
+
+# remove any tags that do not contain "10"
+tags=($(printf "%s\n" "${tags[@]}" | grep "10"))
+#remove any tags containing v9
+tags=($(printf "%s\n" "${tags[@]}" | grep -v "v9"))
+
+printf "%s\n" "${tags[@]}"

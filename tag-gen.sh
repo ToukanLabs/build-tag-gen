@@ -42,10 +42,10 @@ while [[ $# -gt 0 ]]; do
         fi
         ;;
     -u* | --user*)         # set docker user for private images (optional)
-        user="-u ${1#*=} " #trailing space is important
+        user="${1#*=}"
         ;;
     -p* | --pass*)         # set docker password for private images (optional)
-        pass="-p ${1#*=} " #trailing space is important
+        pass="${1#*=}"
         ;;
     -i* | --image*)     # set docker image for semver testing (optional)
         image="${1#*=}" #trailing space is important
@@ -87,16 +87,52 @@ if grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' <<<"$slug" >/dev/null 2>&1; then
     minor=${a[1]}
     patch=${a[2]}
 
+    #output debug info
+    echo "::group::Debug Info"
+    echo "Given slug was: ${slug}"
+    echo "Major version: ${major}"
+    echo "Minor version: ${minor}"
+    echo "Patch version: ${patch}"
+    echo "Given prefix was: ${prefix}"
+    echo "Given suffix was: ${suffix}"
+    echo "Given arch was: ${arch}"
+    echo "Allow latest tag: ${allow_latest}"
+    echo "::endgroup::"
+
     if [ -n "$image" ]; then
-        tagscommand="./dockertags.sh \"${image}\" \"${user}\"\"${pass}\"-s '*.*.*' -av"
+        tagscommand="./dockertags.sh \"${image}\" -u \"${user}\" -p \"${pass}\" -s '*.*.*' -av"
         [ -n "$prefix" ] && tagscommand+=" -prefix ${prefix}" || :
-        [ -n "$suffix" ] && tagscommand+=" -suffix ${suffix}" || :
+        # For tagscommand, append arch to suffix if both are present
+        if [ -n "$suffix" ] && [ -n "$arch" ]; then
+            tagscommand+=" -suffix '${suffix}${arch}'"
+        elif [ -n "$suffix" ]; then
+            tagscommand+=" -suffix '${suffix}'"
+        elif [ -n "$arch" ]; then
+            tagscommand+=" -suffix '${arch}'"
+        fi
         
-        readarray -t major_matches <<<"$(eval $tagscommand)"
+    # debug the command
+        echo "Running command: $tagscommand"
+
+        # Execute the command and capture output
+
+        command_output=$(eval $tagscommand)
+        status=$?
+        if [ $status -ne 0 ]; then
+            echo "Error: Command failed with status $status: ${tagscommand//${pass}/[REDACTED]}" >&2
+            echo "Returned output: $command_output" >&2
+            exit $status
+        fi
+
+        # debug
+        # echo -e "Command output:\n$command_output"
+
+        readarray -t major_matches <<<"$command_output"
         newer_major=0
         newer_minor=0
         newer_patch=0
         for i in "${major_matches[@]}"; do
+        # echo "DEBUG: processing from major_matches: $i"
             if [ -z "$i" ]; then
                 continue
             fi # skip if line is blank
